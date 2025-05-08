@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I LOVE YOU</title>
+    <style>
+    body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: linear-gradient(to bottom right, #ff9a9e, #fad0c4);
+}
+
+.heart {
+    position: relative;
+    width: 300px; /* Increased size */
+    height: 300px; /* Increased size */
+    background-color: red;
+    transform: rotate(-45deg);
+    animation: beat 1s infinite ease-in-out, borderPulse 1s infinite ease-in-out;
+    box-shadow: 0 0 0 5px transparent; /* Initial border effect */
+}
+
+.heart::before,
+.heart::after {
+    content: '';
+    position: absolute;
+    width: 300px; /* Match the new size */
+    height: 300px; /* Match the new size */
+    background-color: red;
+    border-radius: 50%;
+}
+
+.heart::before {
+    top: -150px; /* Adjusted for larger size */
+    left: 0;
+}
+
+.heart::after {
+    top: 0;
+    left: 150px; /* Adjusted for larger size */
+}
+
+@keyframes beat {
+    0%, 100% {
+        transform: scale(1) rotate(-45deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(-45deg); /* Heart grows slightly */
+    }
+}
+
+@keyframes borderPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 5px transparent;
+    }
+    50% {
+        box-shadow: 0 0 20px 10px rgba(255, 255, 255, 0.8); /* Glowing border effect */
+    }
+}
+h1 {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5em; /* Adjusted font size */
+    color: rgb(252, 243, 0);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    text-align: center;
+    font-family: 'Algerian', algerian;
+    animation: fadeIn 2s ease-in-out;
+}
+</style>
+</head>
+<body>
+    <div class="heart"></div>
+    <h1>I Love You Madam</h1>
+    flexbox
+    <div class="container">
+        
+    </div>
+    
+</body>
+</html>
