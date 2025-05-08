@@ -16,8 +16,8 @@
 
 .heart {
     position: relative;
-    width: 300px; /* Increased size */
-    height: 300px; /* Increased size */
+    width: 200px; /* Increased size */
+    height: 200px; /* Increased size */
     background-color: red;
     transform: rotate(-45deg);
     animation: beat 1s infinite ease-in-out, borderPulse 1s infinite ease-in-out;
@@ -28,20 +28,20 @@
 .heart::after {
     content: '';
     position: absolute;
-    width: 300px; /* Match the new size */
-    height: 300px; /* Match the new size */
+    width: 200px; /* Match the new size */
+    height: 200px; /* Match the new size */
     background-color: red;
     border-radius: 50%;
 }
 
 .heart::before {
-    top: -150px; /* Adjusted for larger size */
+    top: -100px; /* Adjusted for larger size */
     left: 0;
 }
 
 .heart::after {
     top: 0;
-    left: 150px; /* Adjusted for larger size */
+    left: 100px; /* Adjusted for larger size */
 }
 
 @keyframes beat {
