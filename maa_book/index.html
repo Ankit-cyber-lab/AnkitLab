@@ -384,7 +384,10 @@ async function doReset(action, label) {
   const m = $("rmsg");
   m.style.color = "#00ffcc"; m.innerText = "Deleting...";
   post({ action })
-    .then(() => { m.innerText = label + " reset complete ✅"; window.lastData = null; })
+    .then(r => {
+      if (r.status !== "success") throw new Error(r.message || "failed");
+      m.innerText = label + " reset complete ✅"; window.lastData = null;
+    })
     .catch(() => { m.style.color = "red"; m.innerText = "Error ❌"; });
 }
 
