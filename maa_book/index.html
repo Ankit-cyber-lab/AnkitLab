@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mummy Log Book</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial; background: linear-gradient(135deg, #0b3d2e, #14532d, #1f7a63); padding: 10px; margin: 0; color: white; min-height: 100vh; }
+    .card { max-width: 420px; margin: 15px auto; background: rgba(255,255,255,0.08); backdrop-filter: blur(15px); padding: 18px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+    input, select, button { width: 95%; padding: 10px; margin-top: 10px; border-radius: 10px; border: none; font-size: 14px; display: block; margin-left: auto; margin-right: auto; }
+    input, select { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+    input::placeholder { color: #ccc; }
+    button { background: linear-gradient(135deg, #00f2fe, #4facfe); color: white; font-weight: bold; cursor: pointer; }
+    button:disabled { background: gray; cursor: not-allowed; }
+    button.back { background: rgba(255,255,255,0.15); }
+    button.danger { background: linear-gradient(135deg, #ff5f6d, #c0262d); }
+    h2 { text-align: center; }
+    #balance { text-align: center; font-size: 28px; color: #00f2fe; margin-top: 10px; }
+    #type option { color: black; }
+    .spinner { border: 3px solid rgba(255,255,255,0.2); border-top: 3px solid #00f2fe; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; margin: auto; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    #msg { text-align: center; margin-top: 10px; display: none; font-size: 13px; font-weight: bold; }
+    #loader { display: none; text-align: center; margin-top: 10px; }
+    .entry { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .left { text-align: left; }
+    .right { text-align: right; font-weight: bold; }
+    .credit { color: #00ff88; }
+    .debit { color: #ff4d4d; }
+    .date { font-size: 11px; color: #aaa; }
+    .particular-text { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+
+    /* Screens + list */
+    .screen { display: none; }
+    .lrow { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 6px; padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
+    .lrow.edit { grid-template-columns: 1.6fr 1fr 1fr 32px; }
+    .lrow.hd { font-weight: bold; color: #00f2fe; }
+    .lrow input { width: 100%; margin: 0; padding: 8px 6px; }
+    .lrow .x { width: 32px; margin: 0; padding: 6px 0; background: #c0262d; }
+    .ltot { text-align: right; font-weight: bold; padding: 10px 4px; color: #00f2fe; }
+    .two { display: flex; gap: 8px; }
+    .two button { width: 100%; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #passbook, #passbook * { visibility: visible; }
+      #passbook { position: absolute; left: 0; top: 0; width: 100%; color: black; background: white; }
+      .entry { border-bottom: 1px solid #000; }
+      .credit { color: green; } .debit { color: red; }
+    }
+
+    #pdfModal { position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 999; display: none; flex-direction: column; }
+    #pdfBar { display: flex; gap: 8px; padding: 10px; align-items: center; background: #0b3d2e; }
+    #pdfBar span { flex: 1; font-weight: bold; font-size: 14px; }
+    #pdfBar button { width: auto; margin: 0; padding: 9px 14px; }
+    #pdfBar .closeBtn { background: #555; }
+    #pdfBody { flex: 1; overflow: auto; padding: 8px 0 30px; }
+    .pw { margin: 12px auto; box-shadow: 0 6px 20px rgba(0,0,0,0.6); overflow: hidden; }
+    .pw .lg-pg { transform-origin: top left; }
+    .lg-pg { width: 794px; height: 1123px; background: #fffdf5; color: #222; padding: 22px; font-family: Georgia, 'Noto Serif Bengali', serif; }
+    .lg-in { border: 2px solid #14532d; height: 100%; padding: 24px 26px; position: relative; }
+    .lg-head { background: #14532d; color: #fff; text-align: center; padding: 14px 10px; border-radius: 4px; }
+    .lg-head h1 { margin: 0; font-size: 28px; letter-spacing: 4px; }
+    .lg-head div { font-size: 12px; letter-spacing: 3px; margin-top: 4px; color: #cfe8d8; }
+    .lg-info { display: flex; justify-content: space-between; font-size: 12px; margin: 12px 0; padding-bottom: 8px; border-bottom: 2px double #14532d; }
+    .lg-tb { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+    .lg-tb th { background: #e4eee2; border: 1px solid #14532d; height: 32px; font-size: 12px; letter-spacing: 1px; }
+    .lg-tb td { height: 38px; padding: 0 8px; border: 1px solid #b9c8b5; vertical-align: middle; }
+    .lg-tb td div { max-height: 32px; line-height: 16px; overflow: hidden; }
+    .lg-tb tr:nth-child(even) td { background: #f7f5e8; }
+    .lg-r { text-align: right; }
+    .lg-cr { color: #0a7a3d; } .lg-db { color: #c0262d; }
+    .lg-tot { display: flex; justify-content: flex-end; gap: 22px; margin-top: 14px; font-size: 13px; font-weight: bold; }
+    .lg-foot { position: absolute; left: 26px; right: 26px; bottom: 14px; display: flex; justify-content: space-between; font-size: 10px; color: #555; border-top: 1px solid #14532d; padding-top: 6px; }
+    /* In-site dialog */
+    #dlg { position: fixed; inset: 0; z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+    #dlg.open { display: flex; }
+    .dlg-box { width: 100%; max-width: 340px; background: linear-gradient(160deg, #14532d, #0b3d2e); border: 1px solid rgba(255,255,255,0.18); border-radius: 18px; padding: 24px 20px 18px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.6); animation: pop .18s ease-out; }
+    @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .dlg-ic { width: 54px; height: 54px; margin: 0 auto 10px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; background: rgba(0,242,254,0.15); }
+    .dlg-ic.danger { background: rgba(255,77,77,0.18); }
+    .dlg-box h3 { margin: 0 0 6px; font-size: 18px; }
+    .dlg-box p { margin: 0 0 6px; font-size: 14px; color: #d5e8dd; line-height: 1.4; }
+    .dlg-box .two { margin-top: 14px; }
+    .dlg-box button { margin: 0; }
+  </style>
+</head>
+
+<body>
+
+<!-- HOME -->
+<div class="screen" id="home">
+  <div class="card">
+    <h2>Mummy Log Book</h2>
+    <button onclick="show('bank')">Bank</button>
+    <button onclick="show('list')">List Make</button>
+    <button class="danger" onclick="show('reset')">Reset</button>
+  </div>
+</div>
+
+<!-- BANK -->
+<div class="screen" id="bank">
+  <div class="card">
+    <button class="back" style="margin-top:0" onclick="show('home')">&larr; Back</button>
+    <h2>Balance</h2>
+    <div id="balance">&#8377; --</div>
+    <button onclick="loadData()">Refresh</button>
+  </div>
+
+  <div class="card">
+    <h2>Add Transaction</h2>
+    <input type="date" id="date">
+    <input type="text" id="particular" placeholder="Particular">
+    <input type="number" id="amount" placeholder="Amount">
+    <select id="type">
+      <option value="Credit">Credit</option>
+      <option value="Debit">Debit</option>
+    </select>
+    <button onclick="submitData()" id="submitBtn">Submit</button>
+    <div id="loader"><div class="spinner"></div>Saving...</div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Passbook</h2>
+    <button onclick="printPassbook()">Print</button>
+    <div id="passbook">Loading...</div>
+  </div>
+</div>
+
+<!-- LIST -->
+<div class="screen" id="list">
+  <div class="card">
+    <button class="back" style="margin-top:0" onclick="show('home')">&larr; Back</button>
+    <h2>List</h2>
+    <div class="two">
+      <button id="editBtn" onclick="startEdit()">Edit</button>
+      <button id="exportBtn" onclick="exportList()">Export</button>
+    </div>
+    <div id="listView" style="margin-top:12px">Loading...</div>
+    <div id="editBar" style="display:none">
+      <button style="background:#2d6a4f" onclick="addRow()">+ Add Row</button>
+      <div class="two">
+        <button onclick="saveList()" id="saveBtn">Save</button>
+        <button class="back" onclick="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+    <div id="lmsg" style="text-align:center;margin-top:10px;font-size:13px;font-weight:bold"></div>
+  </div>
+</div>
+
+<!-- RESET -->
+<div class="screen" id="reset">
+  <div class="card">
+    <button class="back" style="margin-top:0" onclick="show('home')">&larr; Back</button>
+    <h2>Reset</h2>
+    <button class="danger" onclick="doReset('resetBank','Bank')">Bank Reset</button>
+    <button class="danger" onclick="doReset('resetList','List')">List Reset</button>
+    <div id="rmsg" style="text-align:center;margin-top:10px;font-size:13px;font-weight:bold"></div>
+  </div>
+</div>
+
+<div id="dlg"><div class="dlg-box">
+  <div class="dlg-ic" id="dlgIc"></div>
+  <h3 id="dlgTitle"></h3>
+  <p id="dlgText"></p>
+  <div class="two"><button class="back" id="dlgNo">Cancel</button><button id="dlgYes">OK</button></div>
+</div></div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbzF2Xv2O9b0NaTJf7geOgREwrTvzQhQ_Ibl5c-qG6zh1Uz-z4t935p_HcR0fGyzQttI/exec";
+const $ = id => document.getElementById(id);
+
+function post(o) {
+  return fetch(API, { method: "POST", body: JSON.stringify(o) }).then(r => r.json());
+}
+
+function show(name) {
+  ["home", "bank", "list", "reset"].forEach(s => $(s).style.display = s === name ? "block" : "none");
+  window.scrollTo(0, 0);
+  if (name === "bank") { setDate(); loadData(); }
+  if (name === "list") { editing = false; loadList(); }
+  if (name === "reset") $("rmsg").innerText = "";
+}
+
+/* ================= BANK ================= */
+/* ===== In-site dialog (replaces browser alert/confirm) ===== */
+function dlg(o) {
+  return new Promise(res => {
+    $("dlgIc").innerHTML = o.danger ? "&#9888;&#65039;" : (o.icon || "&#8505;&#65039;");
+    $("dlgIc").className = "dlg-ic" + (o.danger ? " danger" : "");
+    $("dlgTitle").innerText = o.title || "";
+    $("dlgText").innerText = o.text || "";
+    const yes = $("dlgYes"), no = $("dlgNo");
+    yes.innerText = o.ok || "OK";
+    yes.className = o.danger ? "danger" : "";
+    no.style.display = o.alertOnly ? "none" : "block";
+    const close = v => { $("dlg").classList.remove("open"); yes.onclick = no.onclick = null; res(v); };
+    yes.onclick = () => close(true);
+    no.onclick = () => close(false);
+    $("dlg").classList.add("open");
+  });
+}
+const notify = (text, title) => dlg({ title: title || "Notice", text, alertOnly: true });
+
+function setDate() {
+  let d = new Date();
+  $("date").value = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,'0') + "-" + String(d.getDate()).padStart(2,'0');
+}
+
+function formatDate(dateStr) {
+  let d = new Date(dateStr);
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function loadData() {
+  return fetch(API)
+    .then(res => res.json())
+    .then(data => {
+      $("balance").innerHTML = "&#8377; " + data.f1;
+      showPassbook(data.transactions);
+      window.lastData = data;
+    })
+    .catch(() => { $("balance").innerText = "Error"; });
+}
+
+function showPassbook(list) {
+  let div = $("passbook");
+  if (!list || list.length === 0) { div.innerHTML = "No transactions"; return; }
+  let html = "";
+  list.forEach((t, i) => {
+    html += `
+      <div class="entry">
+        <div class="left">
+          <div class="particular-text" onclick="toggleText(${i})" id="p${i}">${esc(t.particular)}</div>
+          <div class="date">${formatDate(t.date)}</div>
+        </div>
+        <div class="right ${t.type === 'Credit' ? 'credit' : 'debit'}">
+          ${t.type === 'Credit' ? '+' : '-'} &#8377; ${t.amount}
+        </div>
+      </div>`;
+  });
+  div.innerHTML = html;
+}
+
+function toggleText(i) {
+  let el = $("p" + i);
+  el.style.whiteSpace = el.style.whiteSpace === "normal" ? "nowrap" : "normal";
+}
+
+function submitData() {
+  let btn = $("submitBtn"), loader = $("loader"), msg = $("msg");
+  btn.disabled = true;
+  loader.style.display = "block";
+  msg.style.display = "none";
+
+  post({
+    action: "addBank",
+    date: $("date").value,
+    particular: $("particular").value,
+    amount: $("amount").value,
+    type: $("type").value
+  })
+  .then(() => {
+    msg.innerText = "Transaction saved successfully in My Database";
+    msg.style.color = "#00ffcc";
+    msg.style.display = "block";
+    loadData();
+    setDate();
+    $("particular").value = "";
+    $("amount").value = "";
+  })
+  .catch(() => {
+    msg.innerText = "Error saving data ❌";
+    msg.style.color = "red";
+    msg.style.display = "block";
+  })
+  .finally(() => {
+    btn.disabled = false;
+    loader.style.display = "none";
+    setTimeout(() => { msg.style.display = "none"; }, 3000);
+  });
+}
+
+function printPassbook() { openPdfPreview(); }
+
+/* ================= LIST ================= */
+let listData = [], editing = false;
+
+function lmsg(t, c) { const m = $("lmsg"); m.innerText = t; m.style.color = c || "#00ffcc"; }
+
+function loadList() {
+  $("listView").innerText = "Loading...";
+  $("editBar").style.display = "none";
+  $("editBtn").disabled = $("exportBtn").disabled = false;
+  fetch(API + "?action=list")
+    .then(r => r.json())
+    .then(d => { listData = d.items || []; renderList(); })
+    .catch(() => { $("listView").innerText = "Error loading list"; });
+}
+
+function renderList() {
+  const v = $("listView");
+  if (!editing) {
+    if (!listData.length) { v.innerHTML = "No items. Tap Edit to add."; return; }
+    let total = 0;
+    v.innerHTML = `<div class="lrow hd"><div>Product</div><div>Quantity</div><div>Amount</div></div>` +
+      listData.map(r => { total += Number(r.amount) || 0;
+        return `<div class="lrow"><div>${esc(r.product)}</div><div>${esc(r.quantity)}</div><div>${esc(r.amount)}</div></div>`; }).join("") +
+      `<div class="ltot">Total: &#8377; ${inr(total)}</div>`;
+  } else {
+    v.innerHTML = `<div class="lrow edit hd"><div>Product</div><div>Quantity</div><div>Amount</div><div></div></div>` +
+      listData.map((r, i) => `<div class="lrow edit">
+        <input value="${esc(r.product)}" oninput="listData[${i}].product=this.value" placeholder="Product">
+        <input value="${esc(r.quantity)}" oninput="listData[${i}].quantity=this.value" placeholder="Qty">
+        <input type="number" value="${esc(r.amount)}" oninput="listData[${i}].amount=this.value" placeholder="Amt">
+        <button class="x" onclick="delRow(${i})">&times;</button></div>`).join("");
+  }
+}
+
+function startEdit() {
+  editing = true;
+  if (!listData.length) listData.push({ product: "", quantity: "", amount: "" });
+  $("editBar").style.display = "block";
+  $("editBtn").disabled = $("exportBtn").disabled = true;
+  lmsg("");
+  renderList();
+}
+function cancelEdit() { editing = false; lmsg(""); loadList(); }
+function addRow() { listData.push({ product: "", quantity: "", amount: "" }); renderList(); }
+function delRow(i) { listData.splice(i, 1); renderList(); }
+
+function saveList() {
+  const b = $("saveBtn");
+  b.disabled = true; b.innerText = "Saving...";
+  post({ action: "saveList", items: listData })
+    .then(() => { editing = false; lmsg("List saved ✅"); loadList(); })
+    .catch(() => lmsg("Error saving ❌", "red"))
+    .finally(() => { b.disabled = false; b.innerText = "Save"; });
+}
+
+async function exportList() {
+  if (!listData.length) { lmsg("List khali", "orange"); return; }
+  if (!(await dlg({ title: "Export to Bank", text: "List er sob item Bank e debit hishebe add hobe. Confirm?", ok: "Export", icon: "&#128228;" }))) return;
+  const b = $("exportBtn");
+  b.disabled = true; b.innerText = "Exporting...";
+  post({ action: "exportList" })
+    .then(r => lmsg(r.count + " item bank e export hoyeche ✅"))
+    .catch(() => lmsg("Export error ❌", "red"))
+    .finally(() => { b.disabled = false; b.innerText = "Export"; });
+}
+
+/* ================= RESET ================= */
+async function doReset(action, label) {
+  if (!(await dlg({ title: label + " Reset", text: label + " er sob data delete hoye jabe. Ata ar fire pawa jabe na.", ok: "Yes, Delete", danger: true }))) return;
+  const m = $("rmsg");
+  m.style.color = "#00ffcc"; m.innerText = "Deleting...";
+  post({ action })
+    .then(() => { m.innerText = label + " reset complete ✅"; window.lastData = null; })
+    .catch(() => { m.style.color = "red"; m.innerText = "Error ❌"; });
+}
+
+/* ================= PDF Logbook ================= */
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+function inr(n) {
+  return Number(n).toLocaleString("en-IN", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function buildLedger() {
+  const d = window.lastData;
+  if (!d || !d.transactions || !d.transactions.length) return null;
+  let tx = d.transactions.slice();
+  if (new Date(tx[0].date) > new Date(tx[tx.length - 1].date)) tx.reverse();
+  let cr = 0, db = 0;
+  tx.forEach(t => { const a = parseFloat(t.amount) || 0; if (t.type === 'Credit') cr += a; else db += a; });
+  const closing = parseFloat(String(d.f1).replace(/[^0-9.\-]/g, ""));
+  const opening = isNaN(closing) ? 0 : closing - (cr - db);
+  let bal = opening;
+  const rows = [];
+  if (Math.abs(opening) > 0.005) rows.push({open: true, bal: opening});
+  tx.forEach(t => {
+    const a = parseFloat(t.amount) || 0;
+    bal += t.type === 'Credit' ? a : -a;
+    rows.push({t, a, bal});
+  });
+  return {rows, cr, db, opening, closing: bal};
+}
+
+function buildPagesHTML(L) {
+  const FIRST = 17, REST = 22;
+  const pages = [L.rows.slice(0, FIRST)];
+  for (let i = FIRST; i < L.rows.length; i += REST) pages.push(L.rows.slice(i, i + REST));
+  const today = new Date().toLocaleDateString("en-IN", {day: "2-digit", month: "short", year: "numeric"});
+  return pages.map((rows, pi) => {
+    const cap = pi === 0 ? FIRST : REST;
+    let body = rows.map(r => r.open
+      ? `<tr><td></td><td><div><b>Opening Balance</b></div></td><td></td><td></td><td class="lg-r"><b>${inr(r.bal)}</b></td></tr>`
+      : `<tr><td>${esc(formatDate(r.t.date))}</td><td><div>${esc(r.t.particular)}</div></td>
+          <td class="lg-r lg-cr">${r.t.type === 'Credit' ? inr(r.a) : ''}</td>
+          <td class="lg-r lg-db">${r.t.type === 'Credit' ? '' : inr(r.a)}</td>
+          <td class="lg-r">${inr(r.bal)}</td></tr>`).join("");
+    for (let k = rows.length; k < cap; k++) body += `<tr><td></td><td></td><td></td><td></td><td></td></tr>`;
+    const head = pi === 0 ? `
+      <div class="lg-head"><h1>Bank Mummy Hisab</h1><div>ACCOUNT LOG BOOK</div></div>
+      <div class="lg-info"><span>Statement Date: <b>${today}</b></span><span>Entries: <b>${L.rows.filter(r => !r.open).length}</b></span><span>Balance: <b>&#8377; ${inr(L.closing)}</b></span></div>` : `<div style="height:6px"></div>`;
+    const tot = pi === pages.length - 1 ? `
+      <div class="lg-tot"><span class="lg-cr">Total Credit: &#8377; ${inr(L.cr)}</span><span class="lg-db">Total Debit: &#8377; ${inr(L.db)}</span><span>Closing Balance: &#8377; ${inr(L.closing)}</span></div>` : "";
+    return `<div class="lg-pg"><div class="lg-in">${head}
+      <table class="lg-tb"><colgroup><col style="width:92px"><col><col style="width:96px"><col style="width:96px"><col style="width:104px"></colgroup>
+      <thead><tr><th>DATE</th><th>PARTICULARS</th><th>CREDIT (&#8377;)</th><th>DEBIT (&#8377;)</th><th>BALANCE (&#8377;)</th></tr></thead>
+      <tbody>${body}</tbody></table>${tot}
+      <div class="lg-foot"><span>Mummy Log Book</span><span>Page ${pi + 1} of ${pages.length}</span></div>
+    </div></div>`;
+  });
+}
+
+function openPdfPreview() {
+  const L = buildLedger();
+  if (!L) { notify("Kono transaction nei", "Passbook khali"); return; }
+  window._pages = buildPagesHTML(L);
+  let m = $("pdfModal");
+  if (!m) {
+    m = document.createElement("div");
+    m.id = "pdfModal";
+    m.innerHTML = `<div id="pdfBar"><span>PDF Preview</span>
+      <button id="pdfDl" onclick="downloadPdf()">Download PDF</button>
+      <button class="closeBtn" onclick="closePdfPreview()">Close</button></div><div id="pdfBody"></div>`;
+    document.body.appendChild(m);
+  }
+  const s = Math.min(1, (window.innerWidth - 24) / 794);
+  $("pdfBody").innerHTML = window._pages.map(p =>
+    `<div class="pw" style="width:${794 * s}px;height:${1123 * s}px"><div style="width:794px;height:1123px;transform:scale(${s});transform-origin:top left">${p}</div></div>`).join("");
+  m.style.display = "flex";
+}
+
+function closePdfPreview() { $("pdfModal").style.display = "none"; }
+
+async function downloadPdf() {
+  const btn = $("pdfDl");
+  if (!window.jspdf || !window.html2canvas) { notify("PDF library load hoyni, internet check koro", "PDF Error"); return; }
+  btn.disabled = true; btn.innerText = "Preparing...";
+  const off = document.createElement("div");
+  off.style.cssText = "position:fixed;left:-10000px;top:0";
+  off.innerHTML = window._pages.join("");
+  document.body.appendChild(off);
+  try {
+    const pdf = new window.jspdf.jsPDF("p", "pt", "a4");
+    const pgs = off.querySelectorAll(".lg-pg");
+    for (let i = 0; i < pgs.length; i++) {
+      const c = await html2canvas(pgs[i], {scale: 2, backgroundColor: "#fffdf5"});
+      if (i) pdf.addPage();
+      pdf.addImage(c.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 595.28, 841.89);
+    }
+    pdf.save("Mummy-Log-Book-" + $("date").value + ".pdf");
+  } catch (e) {
+    notify("PDF banate somossa hoyeche", "PDF Error");
+  }
+  off.remove();
+  btn.disabled = false; btn.innerText = "Download PDF";
+}
+
+window.onload = () => show("home");
+</script>
+</body>
+</html>
