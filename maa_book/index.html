@@ -102,7 +102,7 @@
 <!-- BANK -->
 <div class="screen" id="bank">
   <div class="card">
-    <button class="back" style="margin-top:0" onclick="history.back()">&larr; Back</button>
+    <button class="back" style="margin-top:0" onclick="goBack()">&larr; Back</button>
     <h2>Balance</h2>
     <div id="balance">&#8377; --</div>
     <button onclick="loadData()">Refresh</button>
@@ -132,7 +132,7 @@
 <!-- LIST -->
 <div class="screen" id="list">
   <div class="card">
-    <button class="back" style="margin-top:0" onclick="history.back()">&larr; Back</button>
+    <button class="back" style="margin-top:0" onclick="goBack()">&larr; Back</button>
     <h2>List</h2>
     <div class="two">
       <button id="editBtn" onclick="startEdit()">Edit</button>
@@ -153,7 +153,7 @@
 <!-- RESET -->
 <div class="screen" id="reset">
   <div class="card">
-    <button class="back" style="margin-top:0" onclick="history.back()">&larr; Back</button>
+    <button class="back" style="margin-top:0" onclick="goBack()">&larr; Back</button>
     <h2>Reset</h2>
     <button class="danger" onclick="doReset('resetBank','Bank')">Bank Reset</button>
     <button class="danger" onclick="doReset('resetList','List')">List Reset</button>
@@ -176,9 +176,33 @@ function post(o) {
   return fetch(API, { method: "POST", body: JSON.stringify(o) }).then(r => r.json());
 }
 
-let curScreen = "home";
-function show(name, fromPop) {
-  if (!fromPop && name !== curScreen) history.pushState({ s: name }, "");
+/* Hash based navigation: in-app Back button and phone back button behave the same */
+let curScreen = "home", cameFromHome = false;
+function show(name) {
+  if (name !== curScreen) { cameFromHome = true; location.hash = name; }
+  else render(name);
+}
+function goBack() {
+  if (cameFromHome) history.back();
+  else location.replace("#home");
+}
+function route() {
+  const h = location.hash.slice(1) || "home";
+  const dn = $("dlgNo");
+  if ($("dlg").classList.contains("open") && dn.onclick) dn.onclick();
+  const m = $("pdfModal");
+  const wasPdf = m && m.style.display === "flex";
+  if (h === "pdf") {
+    if (window._pages && m) { m.style.display = "flex"; return; }
+    location.replace("#bank"); return;
+  }
+  if (m) m.style.display = "none";
+  if (["home", "bank", "list", "reset"].indexOf(h) < 0) { location.replace("#home"); return; }
+  if (h === "home") cameFromHome = false;
+  if (wasPdf && h === curScreen) return;
+  render(h);
+}
+function render(name) {
   curScreen = name;
   ["home", "bank", "list", "reset"].forEach(s => $(s).style.display = s === name ? "block" : "none");
   window.scrollTo(0, 0);
@@ -437,11 +461,11 @@ function openPdfPreview() {
   $("pdfBody").innerHTML = window._pages.map(p =>
     `<div class="pw" style="width:${794 * s}px;height:${1123 * s}px"><div style="width:794px;height:1123px;transform:scale(${s});transform-origin:top left">${p}</div></div>`).join("");
   m.style.display = "flex";
-  history.pushState({ s: "pdf" }, "");
+  location.hash = "pdf";
 }
 
 function closePdfPreview() {
-  if (history.state && history.state.s === "pdf") history.back();
+  if (location.hash === "#pdf") history.back();
   else $("pdfModal").style.display = "none";
 }
 
@@ -469,17 +493,8 @@ async function downloadPdf() {
   btn.disabled = false; btn.innerText = "Download PDF";
 }
 
-window.addEventListener("popstate", e => {
-  if ($("dlg").classList.contains("open")) $("dlgNo").onclick && $("dlgNo").onclick();
-  const m = $("pdfModal");
-  if (m && m.style.display === "flex") { m.style.display = "none"; return; }
-  show((e.state && e.state.s) || "home", true);
-});
-
-window.onload = () => {
-  history.replaceState({ s: "home" }, "");
-  show("home", true);
-};
+window.addEventListener("hashchange", route);
+window.onload = route;
 </script>
 </body>
 </html>
