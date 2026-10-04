@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -104,10 +104,10 @@
       <select id="party"><option>Company</option><option>Ankit</option></select>
 
       <label for="desc">Description (optional)</label>
-      <input type="text" id="desc" placeholder="Kisher print?" autocomplete="off">
+      <input type="text" id="desc" placeholder="What was printed?" autocomplete="off">
 
       <label for="pies">Pies</label>
-      <input type="number" id="pies" min="0" step="1" inputmode="numeric" placeholder="Koto pies?">
+      <input type="number" id="pies" min="0" step="1" inputmode="numeric" placeholder="How many pies?">
 
       <label for="type">B/W / Colour</label>
       <select id="type"><option>B/W</option><option>Colour</option></select>
@@ -119,7 +119,7 @@
       <div id="msg" class="msg" role="status"></div>
     </div>
 
-    <h2>Sesh entry gulo</h2>
+    <h2>Recent entries</h2>
     <div class="card scroll">
       <table>
         <thead><tr><th>Date</th><th>Party</th><th>Description</th><th>Pies</th><th>Type</th></tr></thead>
@@ -150,7 +150,7 @@
       </div>
       <button id="pbtn" onclick="calc()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M16 15h0M8 19h8"/></svg>
-        Hisab koro
+        Calculate
       </button>
       <div id="pmsg" class="msg" role="status"></div>
     </div>
@@ -158,7 +158,7 @@
     <div id="result" class="sum" hidden>
       <div id="cards"></div>
       <div class="card grand"><div>Company + Ankit total</div><div class="n" id="grand"></div></div>
-      <h2>Ei somoyer entry gulo</h2>
+      <h2>Entries for this period</h2>
       <div class="card scroll">
         <table>
           <thead><tr><th>Date</th><th>Party</th><th>Description</th><th>Pies</th><th>Type</th></tr></thead>
@@ -172,7 +172,7 @@
 
 <script>
 /* =====================================================
-   EIKHANE API (Apps Script Web App URL) BOSAN
+   PUT YOUR API (Apps Script Web App URL) HERE
    ===================================================== */
 const API_URL = "https://script.google.com/macros/s/AKfycbzDZ9Ukh_zkJL7gVwB861QOqe36vAlMSbE2y2X8IgWnAgP6VdwoT32YopWs9Q_gc8M/exec";
 /* ===================================================== */
@@ -183,13 +183,13 @@ const ICON_ERR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const pad2 = n => String(n).padStart(2, '0');
 
-function localToday() {            // local date, ISO/UTC noy
+function localToday() {            // local date, not ISO/UTC
   const d = new Date();
   return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
 }
 function toDDMMYYYY(v) { const [y, m, d] = v.split('-'); return d + '/' + m + '/' + y; }
 
-/* Je kono date format ke 01-JAN-2026 banabe */
+/* Converts any date format to DD-MON-YYYY */
 function fmtDate(v) {
   v = String(v == null ? '' : v).trim();
   if (!v) return '';
@@ -238,7 +238,7 @@ window.addEventListener('popstate', e => {
 });
 
 function rowsHtml(rows) {
-  if (!rows.length) return '<tr><td colspan="5" class="empty">Kono entry nai</td></tr>';
+  if (!rows.length) return '<tr><td colspan="5" class="empty">No entries found</td></tr>';
   return rows.map(r => '<tr>' + r.map((c, i) =>
     '<td' + (i === 2 ? ' class="wrapc"' : '') + '>' + esc(i === 0 ? fmtDate(c) : c) + '</td>').join('') + '</tr>').join('');
 }
@@ -246,7 +246,7 @@ function rowsHtml(rows) {
 /* ---------- Date inputs (DD-MON-YYYY display) ---------- */
 function bindDate(id) {
   const i = $(id), t = $(id + 'Txt');
-  const upd = () => { t.textContent = i.value ? fmtDate(i.value) : 'Date select koro'; };
+  const upd = () => { t.textContent = i.value ? fmtDate(i.value) : 'Select date'; };
   i.addEventListener('change', upd);
   i.addEventListener('input', upd);
   i.addEventListener('click', () => { try { i.showPicker(); } catch (e) {} });
@@ -259,7 +259,7 @@ $('to').value = localToday();
 
 async function save() {
   const date = $('date').value, pies = $('pies').value;
-  if (!date || pies === '') { msg('msg', 'err', 'Date ar Pies dite hobe'); return; }
+  if (!date || pies === '') { msg('msg', 'err', 'Date and Pies are required'); return; }
   $('btn').disabled = true; msg('msg', '', 'Saving...');
   try {
     const res = await fetch(API_URL, {
@@ -272,7 +272,7 @@ async function save() {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
-    msg('msg', 'ok', 'Save hoyeche');
+    msg('msg', 'ok', 'Saved successfully');
     $('pies').value = ''; $('desc').value = '';
     loadList();
   } catch (e) { msg('msg', 'err', 'Error: ' + e.message); }
@@ -283,14 +283,14 @@ async function loadList() {
   try {
     const data = await (await fetch(API_URL)).json();
     $('list').innerHTML = rowsHtml(data.rows || []);
-  } catch (e) { $('list').innerHTML = '<tr><td colspan="5" class="empty">List load hoyni</td></tr>'; }
+  } catch (e) { $('list').innerHTML = '<tr><td colspan="5" class="empty">Could not load list</td></tr>'; }
 }
 
 async function calc() {
   const from = $('from').value, to = $('to').value;
-  if (!from || !to) { msg('pmsg', 'err', 'Start ar End date dite hobe'); return; }
-  if (from > to) { msg('pmsg', 'err', 'Start date End date er age hote hobe'); return; }
-  $('pbtn').disabled = true; msg('pmsg', '', 'Hisab hocche...'); $('result').hidden = true;
+  if (!from || !to) { msg('pmsg', 'err', 'Start and End date are required'); return; }
+  if (from > to) { msg('pmsg', 'err', 'Start date must be before End date'); return; }
+  $('pbtn').disabled = true; msg('pmsg', '', 'Calculating...'); $('result').hidden = true;
   try {
     const data = await (await fetch(API_URL + '?action=payment&from=' + from + '&to=' + to)).json();
     if (!data.ok) throw new Error(data.error);
