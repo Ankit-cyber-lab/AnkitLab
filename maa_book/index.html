@@ -41,6 +41,7 @@
     .ltot { text-align: right; font-weight: bold; padding: 10px 4px; color: #00f2fe; }
     .two { display: flex; gap: 8px; }
     .two button { width: 100%; }
+    #homeBalance { text-align: center; font-size: 28px; color: #00f2fe; margin-top: 10px; }
 
     @media print {
       body * { visibility: hidden; }
@@ -96,6 +97,18 @@
     <button onclick="show('bank')">Bank</button>
     <button onclick="show('list')">List Make</button>
     <button class="danger" onclick="show('reset')">Reset</button>
+  </div>
+
+  <!-- Balance (read only) -->
+  <div class="card">
+    <h2>Balance</h2>
+    <div id="homeBalance">&#8377; --</div>
+  </div>
+
+  <!-- List (read only) -->
+  <div class="card">
+    <h2>List</h2>
+    <div id="homeList">Loading...</div>
   </div>
 </div>
 
@@ -206,6 +219,7 @@ function render(name) {
   curScreen = name;
   ["home", "bank", "list", "reset"].forEach(s => $(s).style.display = s === name ? "block" : "none");
   window.scrollTo(0, 0);
+  if (name === "home") loadHome();
   if (name === "bank") { setDate(); loadData(); }
   if (name === "list") { editing = false; loadList(); }
   if (name === "reset") $("rmsg").innerText = "";
@@ -311,6 +325,33 @@ function submitData() {
 }
 
 function printPassbook() { openPdfPreview(); }
+
+/* ================= HOME (read only) ================= */
+function loadHome() {
+  $("homeBalance").innerHTML = "&#8377; --";
+  $("homeList").innerText = "Loading...";
+
+  fetch(API)
+    .then(r => r.json())
+    .then(d => { $("homeBalance").innerHTML = "&#8377; " + d.f1; window.lastData = d; })
+    .catch(() => { $("homeBalance").innerText = "Error"; });
+
+  fetch(API + "?action=list")
+    .then(r => r.json())
+    .then(d => {
+      const items = d.items || [];
+      if (!items.length) { $("homeList").innerText = "No items"; return; }
+      let total = 0;
+      $("homeList").innerHTML =
+        `<div class="lrow hd"><div>Product</div><div>Quantity</div><div>Amount</div></div>` +
+        items.map(r => {
+          total += Number(r.amount) || 0;
+          return `<div class="lrow"><div>${esc(r.product)}</div><div>${esc(r.quantity)}</div><div>${esc(r.amount)}</div></div>`;
+        }).join("") +
+        `<div class="ltot">Total: &#8377; ${inr(total)}</div>`;
+    })
+    .catch(() => { $("homeList").innerText = "Error loading list"; });
+}
 
 /* ================= LIST ================= */
 let listData = [], editing = false;
