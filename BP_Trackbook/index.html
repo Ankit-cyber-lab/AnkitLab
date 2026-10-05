@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blood Pressure Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f8fb;--card:#fff;--text:#1e293b;--muted:#64748b;--primary:#0e7490;--primary-d:#155e75;--danger:#dc2626;--ok:#16a34a;--border:#e2e8f0;--radius:16px}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 20px;text-align:center}
+header h1{margin:0;font-size:1.25rem;color:var(--primary)}
+main{max-width:900px;margin:0 auto;padding:20px 16px 40px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 2px 10px rgba(15,23,42,.07);padding:20px;margin-bottom:16px}
+.hidden{display:none!important}
+h2{margin:0 0 16px;font-size:1.15rem}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.home-btn{border:0;border-radius:var(--radius);padding:32px 16px;font-size:1.15rem;font-weight:600;cursor:pointer;min-height:130px;transition:transform .15s,background .15s}
+.home-btn:active{transform:scale(.98)}
+.home-btn.primary{background:var(--primary);color:#fff}.home-btn.primary:hover{background:var(--primary-d)}
+.home-btn.secondary{background:#fff;color:var(--primary);border:2px solid var(--primary)}
+label{display:block;font-weight:600;margin:14px 0 6px;font-size:.92rem}
+input,select{width:100%;padding:12px;font-size:1rem;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text)}
+input:focus,select:focus{outline:2px solid var(--primary);border-color:transparent}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.actions{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+.btn{padding:12px 20px;font-size:1rem;border-radius:10px;border:0;cursor:pointer;font-weight:600;min-height:46px}
+.btn.primary{background:var(--primary);color:#fff;flex:1}.btn.primary:disabled{opacity:.6;cursor:not-allowed}
+.btn.ghost{background:#eef2f6;color:var(--text)}
+.msg{padding:12px 14px;border-radius:10px;margin-bottom:14px;font-size:.95rem}
+.msg.error{background:#fef2f2;color:var(--danger);border:1px solid #fecaca}
+.msg.success{background:#f0fdf4;color:var(--ok);border:1px solid #bbf7d0}
+.filters{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.latest .big{font-size:2rem;font-weight:700;color:var(--primary)}
+.latest p{margin:4px 0;color:var(--muted)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:380px}
+th,td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--border);font-size:.92rem}
+th{background:#f8fafc;color:var(--muted);font-weight:600}
+.empty{text-align:center;color:var(--muted);padding:20px}
+.chart-box{position:relative;height:340px}
+.note{font-size:.8rem;color:var(--muted);margin-top:10px}
+.loading{color:var(--muted);text-align:center;padding:16px}
+@media(max-width:600px){.home-grid,.filters{grid-template-columns:1fr}.home-btn{min-height:100px;padding:24px}.row{gap:8px}.chart-box{height:300px}}
+</style>
+</head>
+<body>
+<header><h1>&#10084; Blood Pressure Tracker</h1></header>
+<main>
+  <div id="toast" class="msg hidden" role="status" aria-live="polite"></div>
+
+  <!-- HOME -->
+  <section id="home">
+    <div class="home-grid">
+      <button class="home-btn primary" id="btnNew">+ New Entry</button>
+      <button class="home-btn secondary" id="btnHistory">History</button>
+    </div>
+  </section>
+
+  <!-- NEW ENTRY -->
+  <section id="entry" class="hidden">
+    <div class="card">
+      <h2>New Blood Pressure Entry</h2>
+      <div id="formError" class="msg error hidden" role="alert"></div>
+      <label for="userName">User Name</label>
+      <select id="userName"><option value="">Select user…</option></select>
+      <div class="row">
+        <div><label for="sys">SYS</label><input id="sys" type="number" inputmode="numeric" placeholder="120" min="1"></div>
+        <div><label for="dia">DIA</label><input id="dia" type="number" inputmode="numeric" placeholder="80" min="1"></div>
+        <div><label for="pulse">Pulse</label><input id="pulse" type="number" inputmode="numeric" placeholder="72" min="1"></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="btnSave">Save Reading</button>
+        <button class="btn ghost" id="btnCancel">Cancel / Back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="history" class="hidden">
+    <div class="card">
+      <h2>History</h2>
+      <div class="filters">
+        <div><label for="hUser">Step 1 — Select User</label>
+          <select id="hUser"><option value="">Select user…</option></select></div>
+        <div><label for="hPeriod">Step 2 — Select Time Period</label>
+          <select id="hPeriod">
+            <option value="1month" selected>1 Month</option>
+            <option value="3months">3 Months</option>
+            <option value="6months">6 Months</option>
+            <option value="all">All Data</option>
+          </select></div>
+      </div>
+      <div class="actions"><button class="btn ghost" id="btnBackHome">Back to Home</button></div>
+    </div>
+    <div id="historyError" class="msg error hidden" role="alert"></div>
+    <div id="historyLoading" class="loading hidden">Loading…</div>
+    <div id="historyContent" class="hidden">
+      <div class="card latest" id="latestCard"></div>
+      <div class="card"><h2>Readings</h2><div class="table-wrap" id="tableWrap"></div></div>
+      <div class="card">
+        <h2>BP Trend</h2>
+        <div class="chart-box"><canvas id="bpChart"></canvas></div>
+        <p class="note">Dashed lines are configurable reference limits for visual comparison only — not medical advice.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* =====================================================================
+   CONFIGURATION  (এখানেই সব সেটিং)
+   ===================================================================== */
+
+// >>> এখানে তোমার Apps Script Web App URL বসাও (Deploy করার পর যে /exec দিয়ে শেষ হওয়া URL পাবে) <<<
+const API_URL = 'https://script.google.com/macros/s/AKfycbyarBHynHnn8fAbe9ew2gdOsRcrIZktwy3pA7EkBnwkHLX_J2-6VB2eSLdXSDVhtg/exec';
+
+const USERS = ['Ankit Dna', 'Amit Dna', 'Soma Dna'];
+const BP_LIMITS = { SYS_MIN: 90, SYS_MAX: 120, DIA_MIN: 60, DIA_MAX: 80 }; // reference limits, not medical advice
+const RANGES = { sys: [50, 300], dia: [30, 200], pulse: [20, 250] };      // sanity ranges for validation
+
+/* =====================================================================
+   API LAYER  (Apps Script Web App-এর সাথে fetch দিয়ে যোগাযোগ)
+   ===================================================================== */
+async function parseResponse(res) {
+  let json;
+  try { json = await res.json(); }
+  catch (e) { throw new Error('Server returned an invalid response. Check API_URL and deployment access ("Anyone").'); }
+  if (!json.ok) throw new Error(json.error || 'Unknown server error.');
+  return json.data;
+}
+
+// History: GET request
+async function apiGetHistory(userName, period) {
+  const url = API_URL + '?action=history&user=' + encodeURIComponent(userName) + '&period=' + encodeURIComponent(period);
+  const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+  return parseResponse(res);
+}
+
+// Save: POST request. Content-Type "text/plain" ব্যবহার করা হয়েছে যাতে CORS preflight না লাগে (Apps Script OPTIONS support করে না)
+async function apiSaveReading(payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'save', data: payload })
+  });
+  return parseResponse(res);
+}
+
+/* ===== HELPERS ===== */
+const $ = id => document.getElementById(id);
+let chart = null, reqToken = 0, toastTimer;
+
+function show(section) {
+  ['home', 'entry', 'history'].forEach(s => $(s).classList.toggle('hidden', s !== section));
+  window.scrollTo(0, 0);
+}
+function toast(text, type) {
+  const t = $('toast');
+  t.textContent = text; t.className = 'msg ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 4000);
+}
+function fillUsers(sel) {
+  USERS.forEach(u => { const o = document.createElement('option'); o.value = o.textContent = u; sel.appendChild(o); });
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function apiConfigured() { return API_URL && API_URL.indexOf('PASTE_YOUR') === -1; }
+
+/* ===== NAVIGATION ===== */
+$('btnNew').onclick = () => { $('formError').classList.add('hidden'); show('entry'); };
+$('btnHistory').onclick = () => { show('history'); loadHistory(); };
+$('btnCancel').onclick = () => { resetForm(); show('home'); };
+$('btnBackHome').onclick = () => show('home');
+$('hUser').onchange = loadHistory;
+$('hPeriod').onchange = loadHistory;
+
+/* ===== NEW ENTRY ===== */
+function resetForm() {
+  ['userName', 'sys', 'dia', 'pulse'].forEach(id => $(id).value = '');
+  $('formError').classList.add('hidden');
+}
+function validateForm() {
+  const user = $('userName').value;
+  if (!USERS.includes(user)) return 'Please select a user.';
+  const out = { userName: user };
+  for (const k of ['sys', 'dia', 'pulse']) {
+    const raw = $(k).value.trim();
+    const label = k === 'pulse' ? 'Pulse' : k.toUpperCase();
+    if (raw === '' || isNaN(Number(raw))) return label + ' must be a valid number.';
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < RANGES[k][0] || n > RANGES[k][1])
+      return label + ' must be a whole number between ' + RANGES[k][0] + ' and ' + RANGES[k][1] + '.';
+    out[k] = n;
+  }
+  if (out.sys <= out.dia) return 'SYS must be higher than DIA.';
+  return out;
+}
+$('btnSave').onclick = async () => {
+  const err = $('formError');
+  if (!apiConfigured()) { err.textContent = 'API_URL is not set in index.html.'; err.classList.remove('hidden'); return; }
+  const result = validateForm();
+  if (typeof result === 'string') { err.textContent = result; err.classList.remove('hidden'); return; }
+  err.classList.add('hidden');
+  const btn = $('btnSave');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await apiSaveReading(result);
+    resetForm(); show('home'); toast('Reading saved successfully.', 'success');
+  } catch (e) {
+    err.textContent = 'Could not save: ' + (e.message || 'unknown error') + ' Please try again.';
+    err.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Reading';
+  }
+};
+
+/* ===== HISTORY ===== */
+async function loadHistory() {
+  const user = $('hUser').value, period = $('hPeriod').value;
+  const errEl = $('historyError');
+  errEl.classList.add('hidden');
+  if (!user) { $('historyContent').classList.add('hidden'); return; }
+  if (!apiConfigured()) { errEl.textContent = 'API_URL is not set in index.html.'; errEl.classList.remove('hidden'); return; }
+  const token = ++reqToken; // ignore stale responses if filters change quickly
+  $('historyLoading').classList.remove('hidden');
+  $('historyContent').classList.add('hidden');
+  try {
+    const rows = await apiGetHistory(user, period);
+    if (token !== reqToken) return;
+    $('historyLoading').classList.add('hidden');
+    $('historyContent').classList.remove('hidden');
+    renderLatest(rows); renderTable(rows); renderChart(rows);
+  } catch (e) {
+    if (token !== reqToken) return;
+    $('historyLoading').classList.add('hidden');
+    errEl.textContent = 'Could not load history: ' + (e.message || 'unknown error');
+    errEl.classList.remove('hidden');
+  }
+}
+function renderLatest(rows) {
+  const c = $('latestCard');
+  if (!rows.length) { c.innerHTML = '<h2>Latest Reading</h2><div class="empty">No readings available.</div>'; return; }
+  const r = rows[0]; // newest first
+  c.innerHTML = '<h2>Latest Reading</h2><div class="big">' + r.sys + ' / ' + r.dia + ' mmHg</div>' +
+    '<p>Pulse: <strong>' + r.pulse + ' bpm</strong></p><p>Date &amp; Time: <strong>' + esc(r.timestamp) + '</strong></p>';
+}
+function renderTable(rows) {
+  const w = $('tableWrap');
+  if (!rows.length) { w.innerHTML = '<div class="empty">No blood pressure records found for this period.</div>'; return; }
+  w.innerHTML = '<table><thead><tr><th>Date</th><th>Time</th><th>SYS</th><th>DIA</th><th>Pulse</th></tr></thead><tbody>' +
+    rows.map(r => '<tr><td>' + esc(r.date) + '</td><td>' + esc(r.time) + '</td><td>' + r.sys + '</td><td>' + r.dia + '</td><td>' + r.pulse + '</td></tr>').join('') +
+    '</tbody></table>';
+}
+function renderChart(rows) {
+  if (chart) { chart.destroy(); chart = null; }
+  if (!rows.length) return;
+  const data = rows.slice().reverse(); // oldest -> newest for the x-axis
+  const labels = data.map(r => r.timestamp);
+  const flat = v => data.map(() => v);
+  const limit = (label, v, color) => ({ label, data: flat(v), borderColor: color, borderDash: [6, 6], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 0, fill: false, tension: 0 });
+  chart = new Chart($('bpChart'), {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: 'SYS', data: data.map(r => r.sys), borderColor: '#dc2626', backgroundColor: '#dc2626', borderWidth: 2.5, pointRadius: 4, tension: 0.2 },
+      { label: 'DIA', data: data.map(r => r.dia), borderColor: '#2563eb', backgroundColor: '#2563eb', borderWidth: 2.5, pointRadius: 4, tension: 0.2 },
+      limit('SYS Minimum (limit)', BP_LIMITS.SYS_MIN, '#f59e0b'),
+      limit('SYS Maximum (limit)', BP_LIMITS.SYS_MAX, '#9333ea'),
+      limit('DIA Minimum (limit)', BP_LIMITS.DIA_MIN, '#0d9488'),
+      limit('DIA Maximum (limit)', BP_LIMITS.DIA_MAX, '#64748b')
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+      scales: {
+        x: { title: { display: true, text: 'Date / Time' }, ticks: { maxRotation: 60, autoSkip: true, maxTicksLimit: 8 } },
+        y: { title: { display: true, text: 'Blood Pressure (mmHg)' }, suggestedMin: 40, suggestedMax: 180 }
+      }
+    }
+  });
+}
+
+/* ===== INIT ===== */
+fillUsers($('userName'));
+fillUsers($('hUser'));
+</script>
+</body>
+</html>
