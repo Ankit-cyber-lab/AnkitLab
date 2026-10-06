@@ -3,18 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0e7490">
+<meta name="theme-color" content="#e0f2fe">
 <title>Blood Pressure Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root{--bg:#eef4f8;--card:#fff;--text:#0f172a;--muted:#64748b;--primary:#0e7490;--primary-d:#155e75;--accent:#06b6d4;--danger:#dc2626;--ok:#16a34a;--border:#e2e8f0;--soft:#f1f5f9;--radius:18px;--shadow:0 4px 18px rgba(15,23,42,.08)}
-@media(prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--text:#e2e8f0;--muted:#94a3b8;--border:#233049;--soft:#1a2740;--shadow:0 4px 18px rgba(0,0,0,.35)}}
+:root{--bg:#f6fafd;--card:#fff;--text:#1e293b;--muted:#6b7a90;--primary:#3b8fb5;--primary-d:#2f7a9d;--accent:#7cc4e0;--danger:#d9534f;--ok:#4caf7d;--border:#e6edf3;--soft:#eef6fb;--radius:18px;--shadow:0 4px 16px rgba(59,143,181,.09)}
+@media(prefers-color-scheme:dark){:root{--bg:#121a26;--card:#1a2433;--text:#e2e8f0;--muted:#9aa8bb;--border:#2a384c;--soft:#212e42;--shadow:0 4px 16px rgba(0,0,0,.3)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
-.hero{background:linear-gradient(135deg,#0e7490 0%,#0891b2 55%,#06b6d4 100%);color:#fff;padding:26px 20px 70px;text-align:center}
-.hero .logo{width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,.2);display:inline-flex;align-items:center;justify-content:center;font-size:1.7rem;margin-bottom:8px}
-.hero h1{margin:0;font-size:1.45rem;letter-spacing:.2px}
-.hero p{margin:6px 0 0;opacity:.9;font-size:.92rem}
+.hero{background:linear-gradient(135deg,#dff1fb 0%,#e6f6f4 100%);color:#2b4a5e;padding:26px 20px 70px;text-align:center}
+@media(prefers-color-scheme:dark){.hero{background:linear-gradient(135deg,#1d3447,#1b3a3c);color:#dbeafe}}
+.hero .logo{width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,.75);display:inline-flex;align-items:center;justify-content:center;font-size:1.7rem;margin-bottom:8px;box-shadow:0 2px 8px rgba(59,143,181,.15)}
+.hero h1{margin:0;font-size:1.4rem;letter-spacing:.2px;font-weight:700}
+.hero p{margin:6px 0 0;opacity:.75;font-size:.92rem}
 main{max-width:900px;margin:-48px auto 0;padding:0 16px 40px}
 .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
 .hidden{display:none!important}
@@ -23,50 +24,52 @@ h2{margin:0 0 14px;font-size:1.1rem}
 .home-btn{border:0;border-radius:var(--radius);padding:26px 16px;cursor:pointer;min-height:170px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;box-shadow:var(--shadow);transition:transform .15s}
 .home-btn:active{transform:scale(.97)}
 .home-btn .ic{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem}
-.home-btn .t{font-size:1.2rem;font-weight:700}.home-btn .s{font-size:.85rem;opacity:.85}
-.home-btn.primary{background:linear-gradient(135deg,#0e7490,#0891b2);color:#fff}.home-btn.primary .ic{background:rgba(255,255,255,.22)}
-.home-btn.secondary{background:var(--card);color:var(--primary)}.home-btn.secondary .ic{background:var(--soft)}
+.home-btn .t{font-size:1.2rem;font-weight:700}.home-btn .s{font-size:.85rem;opacity:.8}
+.home-btn.primary{background:linear-gradient(135deg,#d6ecf8,#dcf3ee);color:#2a6585}.home-btn.primary .ic{background:rgba(255,255,255,.8)}
+.home-btn.secondary{background:var(--card);color:#4a7d99}.home-btn.secondary .ic{background:var(--soft)}
+@media(prefers-color-scheme:dark){.home-btn.primary{background:linear-gradient(135deg,#25435a,#23473f);color:#cfe8f5}.home-btn.primary .ic{background:rgba(255,255,255,.12)}.home-btn.secondary{color:#a9d3e6}}
 .tip{margin-top:6px;text-align:center;font-size:.8rem;color:var(--muted)}
-label,.lbl{display:block;font-weight:600;margin:16px 0 6px;font-size:.88rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+label,.lbl{display:block;font-weight:600;margin:16px 0 6px;font-size:.85rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
 input,select{width:100%;padding:13px 14px;font-size:1rem;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text)}
-input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(6,182,212,.2)}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,196,224,.25)}
 .row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .actions{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
 .btn{padding:13px 20px;font-size:1rem;border-radius:12px;border:0;cursor:pointer;font-weight:700;min-height:48px}
-.btn.primary{background:linear-gradient(135deg,#0e7490,#0891b2);color:#fff;flex:1}.btn.primary:disabled{opacity:.6;cursor:not-allowed}
+.btn.primary{background:#5aa9cc;color:#fff;flex:1}.btn.primary:hover{background:#4c9bbf}.btn.primary:disabled{opacity:.6;cursor:not-allowed}
 .btn.ghost{background:var(--soft);color:var(--text)}
 .msg{padding:12px 14px;border-radius:12px;margin-bottom:14px;font-size:.95rem}
-.msg.error{background:#fef2f2;color:var(--danger);border:1px solid #fecaca}
+.msg.error{background:#fdf1f0;color:#c0453f;border:1px solid #f6d3d0}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{border:1.5px solid var(--border);background:var(--card);color:var(--text);padding:10px 16px;border-radius:999px;font-weight:600;font-size:.92rem;cursor:pointer;display:flex;align-items:center;gap:8px}
-.chip.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.chip.on{background:#d6ecf8;border-color:#a9d6ec;color:#23607e}
+@media(prefers-color-scheme:dark){.chip.on{background:#2a4a60;border-color:#3f6a86;color:#d4ecf8}}
 .av{width:24px;height:24px;border-radius:50%;background:var(--soft);color:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800}
-.chip.on .av{background:rgba(255,255,255,.25);color:#fff}
+.chip.on .av{background:rgba(255,255,255,.85);color:#2f7a9d}
 .back{border:0;background:none;color:var(--primary);font-weight:700;font-size:.95rem;cursor:pointer;padding:0 0 10px}
-.latest .big{font-size:2.3rem;font-weight:800;color:var(--primary);line-height:1.1}
+.latest .big{font-size:2.3rem;font-weight:800;color:#3b8fb5;line-height:1.1}
 .latest .big small{font-size:1rem;color:var(--muted);font-weight:600}
 .latest p{margin:6px 0 0;color:var(--muted)}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
 .stat{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:14px 8px;text-align:center}
-.stat b{display:block;font-size:1.3rem;color:var(--primary)}.stat span{font-size:.75rem;color:var(--muted)}
+.stat b{display:block;font-size:1.3rem;color:#3b8fb5}.stat span{font-size:.75rem;color:var(--muted)}
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;min-width:430px}
 th,td{padding:11px 8px;text-align:left;border-bottom:1px solid var(--border);font-size:.9rem;white-space:nowrap}
 th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase}
 .pill{padding:3px 10px;border-radius:999px;font-size:.75rem;font-weight:700}
-.pill.good{background:#dcfce7;color:#15803d}.pill.bad{background:#fee2e2;color:#b91c1c}
+.pill.good{background:#e3f5ea;color:#2e8a58}.pill.bad{background:#fdeaea;color:#c0453f}
 .empty{text-align:center;color:var(--muted);padding:22px}
 .chart-box{position:relative;height:360px}
 .note{font-size:.78rem;color:var(--muted);margin-top:10px}
 .loading{color:var(--muted);text-align:center;padding:18px}
-.result{border-left:8px solid var(--muted);position:relative}
-.result.good{border-left-color:#16a34a;background:#f0fdf4;color:#0f172a}
-.result.bad{border-left-color:#dc2626;background:#fef2f2;color:#0f172a}
-.result .status{font-size:1.25rem;font-weight:800;margin:6px 0}
-.result.good .status{color:#15803d}.result.bad .status{color:#b91c1c}
-.result .vals{font-size:1.6rem;font-weight:800}
-.result p{margin:4px 0}.result .note{color:#64748b}
-.result .close{position:absolute;top:10px;right:12px;border:0;background:none;font-size:1.5rem;cursor:pointer;color:#64748b}
+.result{border-left:6px solid var(--muted);position:relative}
+.result.good{border-left-color:#7ccb9d;background:#f1faf5;color:#1e293b}
+.result.bad{border-left-color:#ee9a96;background:#fef5f4;color:#1e293b}
+.result .status{font-size:1.2rem;font-weight:800;margin:6px 0}
+.result.good .status{color:#2e8a58}.result.bad .status{color:#c0453f}
+.result .vals{font-size:1.5rem;font-weight:800}
+.result p{margin:4px 0}.result .note{color:#6b7a90}
+.result .close{position:absolute;top:10px;right:12px;border:0;background:none;font-size:1.5rem;cursor:pointer;color:#6b7a90}
 @media(max-width:600px){.home-grid{gap:12px}.home-btn{min-height:150px}.stats{grid-template-columns:repeat(2,1fr)}.row{gap:8px}.chart-box{height:320px}}
 </style>
 </head>
@@ -84,7 +87,7 @@ th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase}
       <button class="home-btn primary" id="btnNew"><span class="ic">&#10133;</span><span class="t">+ New Entry</span><span class="s">Add a new reading</span></button>
       <button class="home-btn secondary" id="btnHistory"><span class="ic">&#128200;</span><span class="t">History</span><span class="s">Records &amp; trend graph</span></button>
     </div>
-    <p class="tip">Reference limits only — not medical advice. </p>
+    <p class="tip">Reference limits only — not medical advice.</p>
   </section>
 
   <!-- NEW ENTRY -->
@@ -109,11 +112,11 @@ th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase}
     </div>
   </section>
 
-  <!-- HISTORY  -->
+  <!-- HISTORY -->
   <section id="history" class="hidden">
     <div class="card">
       <button class="back" id="btnBack2">&larr; Back</button>
-      <h2>History </h2>
+      <h2>History</h2>
       <div class="lbl" style="margin-top:0">Step 1 — Select User</div>
       <div class="chips" id="userChips"></div>
       <div class="lbl">Step 2 — Select Time Period</div>
@@ -174,10 +177,10 @@ function render(view) {
   ['home', 'entry', 'history'].forEach(s => $(s).classList.toggle('hidden', s !== view));
   window.scrollTo(0, 0);
 }
-function go(view) { history.pushState({ view }, '', '#' + view); render(view); }   // forward
-function goBack() { if (curView !== 'home') history.back(); else render('home'); } // back to previous screen
+function go(view) { history.pushState({ view }, '', '#' + view); render(view); }
+function goBack() { if (curView !== 'home') history.back(); else render('home'); }
 window.addEventListener('popstate', e => render((e.state && e.state.view) || 'home'));
-history.replaceState({ view: 'home' }, '', location.pathname + location.search); // always start at Home
+history.replaceState({ view: 'home' }, '', location.pathname + location.search);
 
 $('btnNew').onclick = () => { $('resultCard').classList.add('hidden'); resetForm(); go('entry'); };
 $('btnHistory').onclick = () => { go('history'); loadHistory(); };
@@ -304,16 +307,16 @@ function renderChart(rows) {
   if (chart) { chart.destroy(); chart = null; }
   if (!rows.length) return;
   const data = rows.slice().reverse(), labels = data.map(r => r.timestamp), flat = v => data.map(() => v);
-  const limit = (label, v, color, extra) => Object.assign({ label, data: flat(v), borderColor: color, borderWidth: 2, pointRadius: 0, pointHoverRadius: 0, tension: 0, fill: false, order: 2 }, extra || {});
+  const limit = (label, v, color, extra) => Object.assign({ label, data: flat(v), borderColor: color, borderWidth: 1.8, pointRadius: 0, pointHoverRadius: 0, tension: 0, fill: false, order: 2 }, extra || {});
   chart = new Chart($('bpChart'), {
     type: 'line',
     data: { labels, datasets: [
-      { label: 'SYS', data: data.map(r => r.sys), borderColor: '#dc2626', backgroundColor: '#dc2626', borderWidth: 2.5, pointRadius: 4, tension: 0.2, order: 0 },
-      { label: 'DIA', data: data.map(r => r.dia), borderColor: '#2563eb', backgroundColor: '#2563eb', borderWidth: 2.5, pointRadius: 4, tension: 0.2, order: 1 },
-      limit('SYS Maximum (limit)', BP_LIMITS.SYS_MAX, '#9333ea', { fill: '+1', backgroundColor: 'rgba(147,51,234,0.07)' }),
-      limit('SYS Minimum (limit)', BP_LIMITS.SYS_MIN, '#f59e0b'),
-      limit('DIA Maximum (limit)', BP_LIMITS.DIA_MAX, '#0d9488', { fill: '+1', backgroundColor: 'rgba(13,148,136,0.07)' }),
-      limit('DIA Minimum (limit)', BP_LIMITS.DIA_MIN, '#64748b')
+      { label: 'SYS', data: data.map(r => r.sys), borderColor: '#ee8a86', backgroundColor: '#ee8a86', borderWidth: 2.5, pointRadius: 4, tension: 0.25, order: 0 },
+      { label: 'DIA', data: data.map(r => r.dia), borderColor: '#6aa8e0', backgroundColor: '#6aa8e0', borderWidth: 2.5, pointRadius: 4, tension: 0.25, order: 1 },
+      limit('SYS Maximum (limit)', BP_LIMITS.SYS_MAX, '#b9a0e0', { fill: '+1', backgroundColor: 'rgba(185,160,224,0.10)' }),
+      limit('SYS Minimum (limit)', BP_LIMITS.SYS_MIN, '#f0c27a'),
+      limit('DIA Maximum (limit)', BP_LIMITS.DIA_MAX, '#7fcdbb', { fill: '+1', backgroundColor: 'rgba(127,205,187,0.10)' }),
+      limit('DIA Minimum (limit)', BP_LIMITS.DIA_MIN, '#a8b6c6')
     ]},
     options: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
